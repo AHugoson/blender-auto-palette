@@ -16,7 +16,7 @@ import time
 from bpy.types import Operator
 
 
-def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
+def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True, opt_emission=True):
     original_context = bpy.context.area.ui_type
     
     def lin2srgb(lin):
@@ -46,6 +46,7 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
     
     colors = []
     metal_rough = []
+    emission = []
     
     for slot in obj.material_slots:
         bsdf = slot.material.node_tree.nodes['Principled BSDF']
@@ -53,6 +54,7 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
         metallic_val = bsdf.inputs['Metallic'].default_value if opt_metallic else 0.0
         roughness_val = bsdf.inputs['Roughness'].default_value if opt_roughness else 0.0
         metal_rough.append([0.0, roughness_val, metallic_val])
+        emission.append(bsdf.inputs['Emission'].default_value)
 
     # Smallest possible power of 2 image dimensions that fits all colors
     img_dim = 2**math.ceil(math.log(len(colors), 4))
@@ -61,18 +63,26 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
         bpy.data.images.remove(bpy.data.images['color_palette'])
     if 'rough_metal_palette' in bpy.data.images:
         bpy.data.images.remove(bpy.data.images['rough_metal_palette'])
+    if 'emission_palette' in bpy.data.images:
+        bpy.data.images.remove(bpy.data.images['emission_palette'])
 
     bpy.ops.image.new(name='color_palette', width=img_dim, height=img_dim)
     if opt_metallic or opt_roughness:
         bpy.ops.image.new(name='rough_metal_palette', width=img_dim, height=img_dim)
+    if opt_emission:
+        bpy.ops.image.new(name='emission_palette', width=img_dim, height=img_dim)
     
     color_img = bpy.data.images['color_palette']
     if opt_metallic or opt_roughness:
         rough_metal_img = bpy.data.images['rough_metal_palette']
+    if opt_emission:
+        emission_img = bpy.data.images['emission_palette']
         
     paint_img_palette(color_img, colors, srgb=True)
     if opt_metallic or opt_roughness:
         paint_img_palette(rough_metal_img, metal_rough, srgb=False)
+    if opt_emission:
+        paint_img_palette(emission_img, emission, srgb=True)
 
     bpy.ops.object.mode_set(mode='EDIT')
     
@@ -101,21 +111,34 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
     mat = bpy.data.materials.new(name="Palette")
     mat.use_nodes = True
     obj.data.materials.append(mat)
-    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    bsdf_node = mat.node_tree.nodes["Principled BSDF"]
+    output_node = mat.node_tree.nodes["Material Output"]
     
     color_tex_node = new_texImage(mat, color_img, (-600, 400))
     if opt_metallic or opt_roughness:
         rough_metal_tex_node = new_texImage(mat, rough_metal_img, (-600, 100))
         separate_rgb_node = mat.node_tree.nodes.new('ShaderNodeSeparateRGB')
         separate_rgb_node.location = -300, 100
+    if opt_emission:
+        emission_tex_node = new_texImage(mat, emission_img, (-600, 700))
+        add_shader_node = mat.node_tree.nodes.new('ShaderNodeAddShader')
+        add_shader_node.location = 300, 400
+        emission_node = mat.node_tree.nodes.new('ShaderNodeEmission')
+        emission_node.location = 0, 500
+        output_node.location = 500, 300
     
-    mat.node_tree.links.new(bsdf.inputs['Base Color'], color_tex_node.outputs['Color'])
+    mat.node_tree.links.new(bsdf_node.inputs['Base Color'], color_tex_node.outputs['Color'])
     if opt_metallic:
-        mat.node_tree.links.new(bsdf.inputs['Metallic'], separate_rgb_node.outputs['B'])
+        mat.node_tree.links.new(bsdf_node.inputs['Metallic'], separate_rgb_node.outputs['B'])
     if opt_roughness:
-        mat.node_tree.links.new(bsdf.inputs['Roughness'], separate_rgb_node.outputs['G'])
+        mat.node_tree.links.new(bsdf_node.inputs['Roughness'], separate_rgb_node.outputs['G'])
     if opt_metallic or opt_roughness:
         mat.node_tree.links.new(separate_rgb_node.inputs['Image'], rough_metal_tex_node.outputs['Color'])
+    if opt_emission:
+        mat.node_tree.links.new(output_node.inputs['Surface'], add_shader_node.outputs[0])
+        mat.node_tree.links.new(add_shader_node.inputs[1], bsdf_node.outputs['BSDF'])
+        mat.node_tree.links.new(add_shader_node.inputs[0], emission_node.outputs['Emission'])
+        mat.node_tree.links.new(emission_node.inputs['Color'], emission_tex_node.outputs['Color'])
     
     bpy.context.area.ui_type = original_context
     
@@ -123,6 +146,7 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True):
 class AUTO_PALETTE_Properties(bpy.types.PropertyGroup):
     include_metallic: bpy.props.BoolProperty(default=True, description="Include metallic values (creates a metallic roughness texture)")
     include_roughness: bpy.props.BoolProperty(default=True, description="Include roughness values (creates a metallic roughness texture)")
+    include_emission: bpy.props.BoolProperty(default=True, description="Include emission values (creates an emission texture)")
     
     
 class MATERIAL_OT_auto_palette(Operator):
@@ -135,9 +159,10 @@ class MATERIAL_OT_auto_palette(Operator):
         t0 = time.perf_counter()
         opt_metallic = bpy.context.scene.auto_palette.include_metallic
         opt_roughness = bpy.context.scene.auto_palette.include_roughness
+        opt_emission = bpy.context.scene.auto_palette.include_emission
         
         active_obj = bpy.context.active_object
-        combine_bsdfs(active_obj, opt_metallic, opt_roughness)
+        combine_bsdfs(active_obj, opt_metallic, opt_roughness, opt_emission)
         
         print(f'Palette creation time: {time.perf_counter() - t0}')
         return {'FINISHED'}
@@ -157,6 +182,7 @@ class AUTO_PALETTE_PT_Panel(bpy.types.Panel):
         
         option_row.prop(context.scene.auto_palette, 'include_metallic', text="Metallic")
         option_row.prop(context.scene.auto_palette, 'include_roughness', text="Roughness")
+        option_row.prop(context.scene.auto_palette, 'include_emission', text="Emission")
 
         obj = bpy.context.active_object
         if obj==None or obj.type != 'MESH':
