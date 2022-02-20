@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Auto Palette",
     "author": "Aron Hugoson",
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "blender": (2, 80, 0),
     "location": "Material Properties",
     "description": "Combines materials into palette textures.",
@@ -90,6 +90,7 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True, opt_emission=True)
     if not bpy.context.active_object.data.uv_layers.active:
         bpy.ops.mesh.uv_texture_add()
         
+    bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.select_all(action='SELECT')
     bpy.ops.mesh.select_all(action='DESELECT')
     
