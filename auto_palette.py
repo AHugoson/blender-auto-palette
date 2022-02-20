@@ -59,24 +59,24 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True, opt_emission=True)
     # Smallest possible power of 2 image dimensions that fits all colors
     img_dim = 2**math.ceil(math.log(len(colors), 4))
 
-    if 'color_palette' in bpy.data.images:
-        bpy.data.images.remove(bpy.data.images['color_palette'])
-    if 'rough_metal_palette' in bpy.data.images:
-        bpy.data.images.remove(bpy.data.images['rough_metal_palette'])
-    if 'emission_palette' in bpy.data.images:
-        bpy.data.images.remove(bpy.data.images['emission_palette'])
+    if f'{obj.name}_color_palette' in bpy.data.images:
+        bpy.data.images.remove(bpy.data.images[f'{obj.name}_color_palette'])
+    if f'{obj.name}_rough_metal_palette' in bpy.data.images:
+        bpy.data.images.remove(bpy.data.images[f'{obj.name}_rough_metal_palette'])
+    if f'{obj.name}_emission_palette' in bpy.data.images:
+        bpy.data.images.remove(bpy.data.images[f'{obj.name}_emission_palette'])
 
-    bpy.ops.image.new(name='color_palette', width=img_dim, height=img_dim)
+    bpy.ops.image.new(name=f'{obj.name}_color_palette', width=img_dim, height=img_dim)
     if opt_metallic or opt_roughness:
-        bpy.ops.image.new(name='rough_metal_palette', width=img_dim, height=img_dim)
+        bpy.ops.image.new(name=f'{obj.name}_rough_metal_palette', width=img_dim, height=img_dim)
     if opt_emission:
-        bpy.ops.image.new(name='emission_palette', width=img_dim, height=img_dim)
+        bpy.ops.image.new(name=f'{obj.name}_emission_palette', width=img_dim, height=img_dim)
     
-    color_img = bpy.data.images['color_palette']
+    color_img = bpy.data.images[f'{obj.name}_color_palette']
     if opt_metallic or opt_roughness:
-        rough_metal_img = bpy.data.images['rough_metal_palette']
+        rough_metal_img = bpy.data.images[f'{obj.name}_rough_metal_palette']
     if opt_emission:
-        emission_img = bpy.data.images['emission_palette']
+        emission_img = bpy.data.images[f'{obj.name}_emission_palette']
         
     paint_img_palette(color_img, colors, srgb=True)
     if opt_metallic or opt_roughness:
