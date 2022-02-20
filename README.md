@@ -28,7 +28,7 @@ This material will be set up to use the generated palette textures.
 
 ![image](https://user-images.githubusercontent.com/7094426/154843432-92af4f13-5c46-491c-952c-5d465ff0c48b.png)
 
-The UV mapped palette textures will look like in the images below.
+The UV mapped palette textures will look like the images below. The image dimensions will be the smallest possible power of two that fits all material values, in this case 4x4 px.
 
 | Color | Roughness + Metallic | Emission |
 | ----  | -------------------- | -------- |
