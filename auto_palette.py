@@ -118,8 +118,8 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True, opt_emission=True)
     color_tex_node = new_texImage(mat, color_img, (-600, 400))
     if opt_metallic or opt_roughness:
         rough_metal_tex_node = new_texImage(mat, rough_metal_img, (-600, 100))
-        separate_rgb_node = mat.node_tree.nodes.new('ShaderNodeSeparateRGB')
-        separate_rgb_node.location = -300, 100
+        separate_color_node = mat.node_tree.nodes.new('ShaderNodeSeparateColor')
+        separate_color_node.location = -300, 100
     if opt_emission:
         emission_tex_node = new_texImage(mat, emission_img, (-600, 700))
         add_shader_node = mat.node_tree.nodes.new('ShaderNodeAddShader')
@@ -130,11 +130,11 @@ def combine_bsdfs(obj, opt_metallic=True, opt_roughness=True, opt_emission=True)
     
     mat.node_tree.links.new(bsdf_node.inputs['Base Color'], color_tex_node.outputs['Color'])
     if opt_metallic:
-        mat.node_tree.links.new(bsdf_node.inputs['Metallic'], separate_rgb_node.outputs['B'])
+        mat.node_tree.links.new(bsdf_node.inputs['Metallic'], separate_color_node.outputs['Blue'])
     if opt_roughness:
-        mat.node_tree.links.new(bsdf_node.inputs['Roughness'], separate_rgb_node.outputs['G'])
+        mat.node_tree.links.new(bsdf_node.inputs['Roughness'], separate_color_node.outputs['Green'])
     if opt_metallic or opt_roughness:
-        mat.node_tree.links.new(separate_rgb_node.inputs['Image'], rough_metal_tex_node.outputs['Color'])
+        mat.node_tree.links.new(separate_color_node.inputs['Color'], rough_metal_tex_node.outputs['Color'])
     if opt_emission:
         mat.node_tree.links.new(output_node.inputs['Surface'], add_shader_node.outputs[0])
         mat.node_tree.links.new(add_shader_node.inputs[1], bsdf_node.outputs['BSDF'])
