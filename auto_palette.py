@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Auto Palette",
     "author": "Aron Hugoson",
-    "version": (1, 1, 1),
-    "blender": (2, 80, 0),
+    "version": (1, 1, 2),
+    "blender": (3, 3, 0),
     "location": "Material Properties",
     "description": "Combines materials into palette textures.",
     "warning": "Check documentation for compatibility info",
