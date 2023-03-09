@@ -1,6 +1,6 @@
 # Auto Palette
 
-A Blender addon that combines separate materials into a single material with palette textures. The output follows the metal/rough PBR workflow [compatible with glTF 2.0](https://docs.blender.org/manual/en/2.80/addons/io_scene_gltf2.html#materials).
+A Blender addon that combines separate materials into a single material with palette textures. The output follows the metal/rough PBR workflow [compatible with glTF 2.0](https://docs.blender.org/manual/en/3.4/addons/import_export/scene_gltf2.html#materials).
 
 ## Limitations
 
